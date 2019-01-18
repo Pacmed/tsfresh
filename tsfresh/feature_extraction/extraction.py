@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from tsfresh import defaults
-from tsfresh.feature_extraction import feature_calculators
+from tsfresh.feature_extraction import feature_calculators, feature_calculators_time
 from tsfresh.feature_extraction.settings import ComprehensiveFCParameters
 from tsfresh.utilities import dataframe_functions, profiling
 from tsfresh.utilities.distribution import MapDistributor, MultiprocessingDistributor, DistributorBaseClass
@@ -33,7 +33,9 @@ def extract_features(timeseries_container, default_fc_parameters=None,
                      profile=defaults.PROFILING,
                      profiling_filename=defaults.PROFILING_FILENAME,
                      profiling_sorting=defaults.PROFILING_SORTING,
-                     distributor=None):
+                     distributor=None,
+                     datetime_index=False,
+                     custom_features=None):
     """
     Extract features from
 
@@ -122,6 +124,14 @@ def extract_features(timeseries_container, default_fc_parameters=None,
              TSFresh to choose the best distributor.
     :type distributor: class
 
+    :param datetime_index: Whether to use the (datetime) index of each time series in order to
+    calculate features.
+    :type datetime_index: bool
+
+    :param custom_features: Extra custom features to be used, in the format {feature_name:
+    function}. The functions should still be included in the settings.
+    :type custom_features: dict
+
     :return: The (maybe imputed) DataFrame containing extracted features.
     :rtype: pandas.DataFrame
     """
@@ -156,7 +166,9 @@ def extract_features(timeseries_container, default_fc_parameters=None,
                                 disable_progressbar=disable_progressbar,
                                 default_fc_parameters=default_fc_parameters,
                                 kind_to_fc_parameters=kind_to_fc_parameters,
-                                distributor=distributor)
+                                distributor=distributor,
+                                datetime_index=datetime_index,
+                                custom_features=custom_features)
 
         # Impute the result if requested
         if impute_function is not None:
@@ -209,6 +221,10 @@ def generate_data_chunk_format(df, column_id, column_kind, column_value):
     :param column_value: The name for the column keeping the value itself.
     :type column_value: str
 
+    :param datetime_index: Whether to use the (datetime) index of each time series in order to
+    calculate features.
+    :type datetime_index: bool
+
     :return: the data in chunks
     :rtype: list
     """
@@ -228,7 +244,8 @@ def generate_data_chunk_format(df, column_id, column_kind, column_value):
 
 def _do_extraction(df, column_id, column_value, column_kind,
                    default_fc_parameters, kind_to_fc_parameters,
-                   n_jobs, chunk_size, disable_progressbar, distributor):
+                   n_jobs, chunk_size, disable_progressbar, distributor, datetime_index,
+                   custom_features):
     """
     Wrapper around the _do_extraction_on_chunk, which calls it on all chunks in the data frame.
     A chunk is a subset of the data, with a given kind and id - so a single time series.
@@ -274,6 +291,14 @@ def _do_extraction(df, column_id, column_value, column_kind,
                          Leave to None, if you want TSFresh to choose the best distributor.
     :type distributor: DistributorBaseClass
 
+    :param datetime_index: Whether to use the (datetime) index of each time series in order to
+    calculate features.
+    :type datetime_index: bool
+
+    :param custom_features: Extra custom features to be used, in the format {feature_name:
+    function}. The functions should still be included in the settings.
+    :type custom_features: dict
+
     :return: the extracted features
     :rtype: pd.DataFrame
     """
@@ -292,7 +317,13 @@ def _do_extraction(df, column_id, column_value, column_kind,
         raise ValueError("the passed distributor is not an DistributorBaseClass object")
 
     kwargs = dict(default_fc_parameters=default_fc_parameters, kind_to_fc_parameters=kind_to_fc_parameters)
-    result = distributor.map_reduce(_do_extraction_on_chunk, data=data_in_chunks, chunk_size=chunk_size,
+
+    if datetime_index:
+        extract_function = _do_extraction_on_chunk_time
+    else:
+        extract_function = _do_extraction_on_chunk
+
+    result = distributor.map_reduce(extract_function, data=data_in_chunks, chunk_size=chunk_size,
                                     function_kwargs=kwargs)
     distributor.close()
 
@@ -308,7 +339,7 @@ def _do_extraction(df, column_id, column_value, column_kind,
     return result
 
 
-def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters):
+def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters, custom_features):
     """
     Main function of this module: use the feature calculators defined in the
     default_fc_parameters or kind_to_fc_parameters parameters and extract all
@@ -327,6 +358,10 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
     :param chunk: A tuple of sample_id, kind, data
     :param default_fc_parameters: A dictionary of feature calculators.
     :param kind_to_fc_parameters: A dictionary of fc_parameters for special kinds or None.
+    :param custom_features: Extra custom features to be used, in the format {feature_name:
+    function}. The functions should still be included in the settings.
+    :type custom_features: dict
+
     :return: A list of calculated features.
     """
     sample_id, kind, data = chunk
@@ -339,7 +374,72 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
 
     def _f():
         for function_name, parameter_list in fc_parameters.items():
-            func = getattr(feature_calculators, function_name)
+            
+            if function_name in custom_features.keys():
+                func = custom_features.get(function_name)
+            else:
+                func = getattr(feature_calculators_time, function_name)
+
+            if func.fctype == "combiner":
+                result = func(data, param=parameter_list)
+            else:
+                if parameter_list:
+                    result = ((convert_to_output_format(param), func(data, **param)) for param in parameter_list)
+                else:
+                    result = [("", func(data))]
+
+            for key, item in result:
+                feature_name = str(kind) + "__" + func.__name__
+                if key:
+                    feature_name += "__" + str(key)
+                yield {"variable": feature_name, "value": item, "id": sample_id}
+
+    return list(_f())
+
+
+def _do_extraction_on_chunk_time(chunk, default_fc_parameters, kind_to_fc_parameters,
+                                 custom_features):
+    """Use the feature calculators defined in the default_fc_parameters or kind_to_fc_parameters
+    parameters and extract all features on the chunk, using the (datetime) index.
+
+    The chunk consists of the chunk id, the chunk kind and the data (as a Series),
+    which is then converted to a numpy array - so a single time series.
+
+    Returned is a list of the extracted features. Each one is a dictionary consisting of
+    { "variable": the feature name in the format <kind>__<feature>__<parameters>,
+      "value": the number value of the feature,
+      "id": the id of the chunk }
+
+    The <parameters> are in the form described in :mod:`~tsfresh.utilities.string_manipulation`.
+
+    :param chunk: A tuple of sample_id, kind, data
+    :param default_fc_parameters: A dictionary of feature calculators.
+    :param kind_to_fc_parameters: A dictionary of fc_parameters for special kinds or None.
+
+    :param custom_features: Extra custom features to be used, in the format {feature_name:
+    function}. The functions should still be included in the settings.
+    :type custom_features: dict
+
+    :return: A list of calculated features.
+    """
+    sample_id, kind, data = chunk
+
+    assert data.index.dtype == pd.to_datetime(['2013']).dtype, 'The index of the dataframe needs ' \
+                                                               'to be of type datetime in order ' \
+                                                               'to extract time-based features.'
+
+    if kind_to_fc_parameters and kind in kind_to_fc_parameters:
+        fc_parameters = kind_to_fc_parameters[kind]
+    else:
+        fc_parameters = default_fc_parameters
+
+    def _f():
+        for function_name, parameter_list in fc_parameters.items():
+
+            if function_name in custom_features.keys():
+                func = custom_features.get(function_name)
+            else:
+                func = getattr(feature_calculators_time, function_name)
 
             if func.fctype == "combiner":
                 result = func(data, param=parameter_list)

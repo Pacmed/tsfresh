@@ -1884,24 +1884,27 @@ def energy_ratio_by_chunks(x, param):
 
 
 @set_property("fctype", "combiner")
-def value_count_all(x, param):
+@set_property("high_comp_cost", True)
+def linear_trend_time(x, param):
     """
-    Returns the number of values in x
+    Calculate a linear least-squares regression for the values of the time series.
+
+    Possible extracted attributes are "pvalue", "rvalue", "intercept", "slope", "stderr", see the documentation of
+    linregress for more information.
 
     :param x: the time series to calculate the feature of
     :type x: pandas.Series
-    :param param: contains dictionaries {"exclude": x} with x being a value to exclude from the
-    counts
+    :param param: contains dictionaries {"attr": x} with x an string, the attribute name of the regression model
     :type param: list
-    :return: the value of this feature
-    :return type: list
+    :return: the different feature values
+    :return type: pandas.Series
     """
-    values, counts = np.unique(x, return_counts=True)
+    # Get differences in seconds
+    times_seconds = (x.index - x.index[0]).total_seconds()
+    # Convert to minutes and eshape for linear regression
+    times_minutes = np.asarray(times_seconds/60)
 
-    if param['exclude'] is None:
-        pass
-    else:
-        values = [v for v, c in zip(values, counts) if v not in param['exclude']]
+    linReg = linregress(times_minutes, x.values)
 
-    return [("value_count__value_\"{}\"".format(value), value_count(x, value))
-            for value in values]
+    return [("attr_\"{}\"".format(config["attr"]), getattr(linReg, config["attr"]))
+            for config in param]
