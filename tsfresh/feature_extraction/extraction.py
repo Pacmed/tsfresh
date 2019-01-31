@@ -154,6 +154,9 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     if profile:
         profiler = profiling.start_profiling()
 
+    if custom_features is None:
+        custom_features = {}
+
     with warnings.catch_warnings():
         if not show_warnings:
             warnings.simplefilter("ignore")
@@ -316,7 +319,9 @@ def _do_extraction(df, column_id, column_value, column_kind,
     if not isinstance(distributor, DistributorBaseClass):
         raise ValueError("the passed distributor is not an DistributorBaseClass object")
 
-    kwargs = dict(default_fc_parameters=default_fc_parameters, kind_to_fc_parameters=kind_to_fc_parameters)
+    kwargs = dict(default_fc_parameters=default_fc_parameters,
+                  kind_to_fc_parameters=kind_to_fc_parameters,
+                  custom_features=custom_features)
 
     if datetime_index:
         extract_function = _do_extraction_on_chunk_time
