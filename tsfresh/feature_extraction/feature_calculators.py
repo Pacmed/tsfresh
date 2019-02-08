@@ -1888,7 +1888,7 @@ def value_count_all(x, param):
     """
     Returns the number of values in x
 
-    :param x: the time series to calculate the feature of
+    :param x: the time series on which to calculate the feature.
     :type x: pandas.Series
     :param param: contains dictionaries {"exclude": x} with x being a value to exclude from the
     counts
@@ -1905,3 +1905,27 @@ def value_count_all(x, param):
 
     return [("value_count__value_\"{}\"".format(value), value_count(x, value))
             for value in values]
+
+
+@set_property("fctype", "simple")
+def last(x):
+    """Return the last value of x.
+
+    :param x: the time series on which to calculate the feature.
+    :type x: pandas.Series
+    :return: the value of this feature
+    :return type: list
+    """
+    return x[-1]
+
+
+@set_property("fctype", "simple")
+def first(x):
+    """Return the first value of x.
+
+    :param x: the time series on which to calculate the feature.
+    :type x: pandas.Series
+    :return: the value of this feature
+    :return type: list
+    """
+    return x[0]
