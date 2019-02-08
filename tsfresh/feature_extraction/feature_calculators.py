@@ -167,6 +167,13 @@ def _aggregate_on_chunks(x, f_agg, chunk_len):
     return [getattr(x[i * chunk_len: (i + 1) * chunk_len], f_agg)() for i in range(int(np.ceil(len(x) / chunk_len)))]
 
 
+def _assert_index_is_datetime(x):
+    """Assert that the index of a pandas Series is a datetime dtype."""
+    assert x.index.dtype == pd.to_datetime(['2013']).dtype, 'The index of the dataframe needs ' \
+                                                               'to be of type datetime in order ' \
+                                                               'to extract time-based features.'
+
+
 def set_property(key, value):
     """
     This method returns a decorator that sets the property key of the function to value
@@ -1929,3 +1936,32 @@ def first(x):
     :return type: list
     """
     return x[0]
+
+
+@set_property("fctype", "simple")
+@set_property("high_comp_cost", True)
+def slope(x):
+    """
+    Calculate the slope of a linear least-squares regression for the values of the time series,
+    using the timestamp index.
+
+    Possible extracted attributes are "pvalue", "rvalue", "intercept", "slope", "stderr", see the documentation of
+    linregress for more information.
+
+    :param x: the time series to calculate the feature of
+    :type x: pandas.Series
+    :return: the different feature values
+    :return type: pandas.Series
+    """
+    _assert_index_is_datetime(x)
+
+    # Get differences in seconds
+    times_seconds = (x.index - x.index[0]).total_seconds()
+
+    # Convert to minutes and reshape for linear regression
+    times_minutes = np.asarray(times_seconds / 60)
+
+    linReg = linregress(times_minutes, x.values)
+
+    # Return per hour
+    return np.multiply(getattr(linReg, 'slope'), 60)
