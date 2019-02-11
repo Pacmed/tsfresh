@@ -29,6 +29,7 @@ from statsmodels.tsa.ar_model import AR
 from statsmodels.tsa.stattools import acf, adfuller, pacf
 
 # todo: make sure '_' works in parameter names in all cases, add a warning if not
+from tsfresh.utilities.dataframe_functions import assert_index_is_datetime
 
 
 def _roll(a, shift):
@@ -165,13 +166,6 @@ def _aggregate_on_chunks(x, f_agg, chunk_len):
     :return type: list
     """
     return [getattr(x[i * chunk_len: (i + 1) * chunk_len], f_agg)() for i in range(int(np.ceil(len(x) / chunk_len)))]
-
-
-def _assert_index_is_datetime(x):
-    """Assert that the index of a pandas Series is a datetime dtype."""
-    assert x.index.dtype == pd.to_datetime(['2013']).dtype, 'The index of the dataframe needs ' \
-                                                               'to be of type datetime in order ' \
-                                                               'to extract time-based features.'
 
 
 def set_property(key, value):
@@ -1951,9 +1945,9 @@ def slope(x):
     :param x: the time series to calculate the feature of
     :type x: pandas.Series
     :return: the different feature values
-    :return type: pandas.Series
+    :return type: float
     """
-    _assert_index_is_datetime(x)
+    assert_index_is_datetime(x)
 
     # Get differences in seconds
     times_seconds = (x.index - x.index[0]).total_seconds()
@@ -1965,3 +1959,66 @@ def slope(x):
 
     # Return per hour
     return np.multiply(getattr(linReg, 'slope'), 60)
+
+
+@set_property("fctype", "range")
+@set_property("high_comp_cost", True)
+def time_since_end(x):
+    """
+    Calculate the time, in hours, since the latest time recorded for
+
+    x needs to have a datetime multi-index. The first one is the end of the current window,
+    the second is the start time of the range feature, and the third one the end time of the
+    range feature.
+
+    The value of x must be the total value for the range (not per minute or per hour)
+
+    :param x: the time series to calculate the feature of
+    :type x: pandas.Series
+    :return: the different feature values
+    :return type: float
+    """
+    x.loc[x['end_time'] > x['end_of_window'], 'end_time'] = x.loc[0, 'end_of_window']
+    latest_time = x['end_time'].max()
+
+    return (x.loc[0, 'end_of_window'] - latest_time).total_seconds() / 3600
+
+
+@set_property("fctype", "range")
+@set_property("high_comp_cost", True)
+def time_under(x):
+    """
+    Calculate the time, in hours, since the latest time recorded for
+
+    x needs to have a datetime multi-index. The first one is the end of the current window,
+    the second is the start time of the range feature, and the third one the end time of the
+    range feature.
+
+    The value of x must be the total value for the range (not per minute or per hour)
+
+    :param x: the time series to calculate the feature of
+    :type x: pd.DataFrame
+    :return: the different feature values
+    :return type: pandas.Series
+    """
+    return x['total_minutes'].sum()
+
+
+@set_property("fctype", "range")
+@set_property("high_comp_cost", True)
+def total_dose(x):
+    """
+    Calculate the time, in hours, since the latest time recorded for
+
+    x needs to have a datetime multi-index. The first one is the end of the current window,
+    the second is the start time of the range feature, and the third one the end time of the
+    range feature.
+
+    The value of x must be the total value for the range (not per minute or per hour)
+
+    :param x: the time series to calculate the feature of
+    :type x: pd.DataFrame
+    :return: the different feature values
+    :return type: float
+    """
+    return x['time_in_minutes'].multiply(x['value_per_minute']).sum()

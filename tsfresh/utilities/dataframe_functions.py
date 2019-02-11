@@ -528,3 +528,47 @@ def make_forecasting_frame(x, kind, max_timeshift, rolling_direction):
     df_shift = df_shift[mask]
 
     return df_shift, df["value"][1:]
+
+
+def assert_index_is_datetime(x):
+    """Assert that the index of a pandas Series is a datetime dtype.
+
+    :param x: the time series to calculate the aggregation of
+    :type x: pandas.Series
+    """
+    ix = x.index
+    dtype_date = pd.to_datetime(['2013']).dtype
+    error_mess = 'The index of the dataframe needs to be of type datetime'
+
+    if isinstance(ix, pd.MultiIndex):
+        for x in range(len(ix.levels)):
+            assert ix.get_level_values(x).dtype == dtype_date, error_mess
+    else:
+        assert x.index.dtype == dtype_date, error_mess
+
+
+def preprocess_range_series(x):
+    """Preprocess a range value series with a datetime multiindex.
+
+    :param x: the features to process.
+    :type x: pd.Series
+    :return: a processed pd.DataFrame
+    :return type: pd.DataFrame
+    """
+    assert_index_is_datetime(x)
+
+    x = x.to_frame()
+    x.columns = ['value']
+
+    x['end_of_window'] = x.index.get_level_values(0)
+    x['start_time'] = x.index.get_level_values(1)
+    x['end_time'] = x.index.get_level_values(2)
+    x = x.reset_index(drop=True)
+
+    x['value_per_minute'] = x['value'] / ((x['end_time'] - x['start_time']).dt.total_seconds() / 60)
+
+    # Cap end times at value of the latest end of window
+    x.loc[x['end_time'] > x['end_of_window'], 'end_time'] = x['end_of_window'].max()
+    x['time_in_minutes'] = ((x['end_time'] - x['start_time']).dt.total_seconds() / 60)
+
+    return x
