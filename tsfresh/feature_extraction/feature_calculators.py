@@ -1999,7 +1999,7 @@ def time_under(x):
     :param x: the time series to calculate the feature of
     :type x: pd.DataFrame
     :return: the different feature values
-    :return type: pandas.Series
+    :return type: float
     """
     return x['total_minutes'].sum()
 
@@ -2008,7 +2008,7 @@ def time_under(x):
 @set_property("high_comp_cost", True)
 def total_dose(x):
     """
-    Calculate the time, in hours, since the latest time recorded for
+    Calculate the time, in hours, since the latest time recorded.
 
     x needs to have a datetime multi-index. The first one is the end of the current window,
     the second is the start time of the range feature, and the third one the end time of the
@@ -2022,3 +2022,16 @@ def total_dose(x):
     :return type: float
     """
     return x['time_in_minutes'].multiply(x['value_per_minute']).sum()
+
+
+@set_property("fctype", "simple")
+def is_measured(x):
+    """
+    Check if a variable has been measured – i.e. if the series is not empty.
+
+    :param x: the time series to calculate the feature of
+    :type x: pd.DataFrame
+    :return: the different feature values
+    :return type: float
+    """
+    return float(bool(len(x)))
