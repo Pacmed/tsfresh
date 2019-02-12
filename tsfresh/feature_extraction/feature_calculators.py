@@ -1941,8 +1941,13 @@ def slope(x):
     """
     assert_index_is_datetime(x)
 
+    if isinstance(x.index, pd.MultiIndex):
+        ix = x.index.get_level_values(3)
+    else:
+        ix = x.index
+
     # Get differences in seconds
-    times_seconds = (x.index - x.index[0]).total_seconds()
+    times_seconds = (ix - ix[0]).total_seconds()
 
     # Convert to minutes and reshape for linear regression
     times_minutes = np.asarray(times_seconds / 60)

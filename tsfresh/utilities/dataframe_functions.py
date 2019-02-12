@@ -551,7 +551,7 @@ def preprocess_range_df(x):
     """Preprocess a range value series with a datetime multiindex.
 
     :param x: the features to process.
-    :type x: pd.Series
+    :type x: pd.DataFrame
     :return: a processed pd.DataFrame
     :return type: pd.DataFrame
     """
@@ -562,6 +562,8 @@ def preprocess_range_df(x):
     x['end_of_window'] = x.index.get_level_values(0)
     x['start_time'] = x.index.get_level_values(1)
     x['end_time'] = x.index.get_level_values(2)
+    x['timestamp'] = x.index.get_level_values(3)
+
     x = x.reset_index(drop=True)
 
     x['value_per_minute'] = x['value'] / ((x['end_time'] - x['start_time']).dt.total_seconds() / 60)
