@@ -1884,25 +1884,17 @@ def energy_ratio_by_chunks(x, param):
     return list(zip(res_index, res_data)) # Materialize as list for Python 3 compatibility with name handling
 
 
-@set_property("fctype", "combiner")
-def value_count_all(x, param):
+@set_property("fctype", "simple")
+def value_count_all(x):
     """
     Returns the number of values in x
 
     :param x: the time series on which to calculate the feature.
     :type x: pandas.Series
-    :param param: contains dictionaries {"exclude": x} with x being a value to exclude from the
-    counts
-    :type param: list
     :return: the value of this feature
     :return type: list
     """
     values, counts = np.unique(x, return_counts=True)
-
-    if param['exclude'] is None:
-        pass
-    else:
-        values = [v for v, c in zip(values, counts) if v not in param['exclude']]
 
     return [("value_count__value_\"{}\"".format(value), value_count(x, value))
             for value in values]
@@ -2001,7 +1993,7 @@ def time_under(x):
     :return: the different feature values
     :return type: float
     """
-    return x['total_minutes'].sum()
+    return x['time_in_minutes'].sum()
 
 
 @set_property("fctype", "range")
