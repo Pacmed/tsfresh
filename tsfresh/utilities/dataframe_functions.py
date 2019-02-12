@@ -547,7 +547,7 @@ def assert_index_is_datetime(x):
         assert x.index.dtype == dtype_date, error_mess
 
 
-def preprocess_range_series(x):
+def preprocess_range_df(x):
     """Preprocess a range value series with a datetime multiindex.
 
     :param x: the features to process.
@@ -557,7 +557,6 @@ def preprocess_range_series(x):
     """
     assert_index_is_datetime(x)
 
-    x = x.to_frame()
     x.columns = ['value']
 
     x['end_of_window'] = x.index.get_level_values(0)

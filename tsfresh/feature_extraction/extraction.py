@@ -16,7 +16,7 @@ from tsfresh import defaults
 from tsfresh.feature_extraction import feature_calculators
 from tsfresh.feature_extraction.settings import ComprehensiveFCParameters
 from tsfresh.utilities import dataframe_functions, profiling
-from tsfresh.utilities.dataframe_functions import preprocess_range_series
+from tsfresh.utilities.dataframe_functions import preprocess_range_df
 from tsfresh.utilities.distribution import MapDistributor, MultiprocessingDistributor, \
     DistributorBaseClass
 from tsfresh.utilities.string_manipulation import convert_to_output_format
@@ -147,6 +147,10 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     if default_fc_parameters is None:
         default_fc_parameters = ComprehensiveFCParameters()
 
+    if any(_get_function(fun_name).fctype == 'range' for fun_name,
+                                                         _ in default_fc_parameters.items()):
+        df_melt = preprocess_range_df(df_melt)
+
     # If requested, do profiling (advanced feature)
     if profile:
         profiler = profiling.start_profiling()
@@ -244,6 +248,10 @@ def generate_data_chunk_format(df, column_id, column_kind, column_value):
     return data_in_chunks
 
 
+def _get_function(fun_name):
+    return getattr(feature_calculators, fun_name)
+
+
 def _do_extraction(df, column_id, column_value, column_kind,
                    default_fc_parameters, kind_to_fc_parameters,
                    n_jobs, chunk_size, disable_progressbar, distributor,
@@ -337,7 +345,7 @@ def _do_extraction(df, column_id, column_value, column_kind,
     return result
 
 
-def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters, custom_features):
+def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters):
     """
     Main function of this module: use the feature calculators defined in the
     default_fc_parameters or kind_to_fc_parameters parameters and extract all
@@ -356,9 +364,6 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters,
     :param chunk: A tuple of sample_id, kind, data
     :param default_fc_parameters: A dictionary of feature calculators.
     :param kind_to_fc_parameters: A dictionary of fc_parameters for special kinds or None.
-    :param custom_features: Extra custom features to be used, in the format {feature_name:
-    function}. The functions should still be included in the settings.
-    :type custom_features: dict
 
     :return: A list of calculated features.
     """
@@ -369,27 +374,12 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters,
     else:
         fc_parameters = default_fc_parameters
 
-    def _get_function(fun_name):
-        if fun_name in custom_features.keys():
-            return custom_features.get(fun_name)
-        else:
-            return getattr(feature_calculators, fun_name)
-
-    if any(_get_function(fun_name).fctype == 'range' for fun_name, _ in fc_parameters.items()):
-        range_data = preprocess_range_series(data)
-    else:
-        range_data = data
-
     def _f():
         for function_name, parameter_list in fc_parameters.items():
 
             func = _get_function(function_name)
 
-            if func.fctype == 'range':
-                x = range_data.copy()
-            else:
-                x = data.copy()
-
+            x = data
             if func.fctype == "combiner":
                 result = func(x, param=parameter_list)
             else:
