@@ -364,11 +364,9 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
     :param chunk: A tuple of sample_id, kind, data
     :param default_fc_parameters: A dictionary of feature calculators.
     :param kind_to_fc_parameters: A dictionary of fc_parameters for special kinds or None.
-
     :return: A list of calculated features.
     """
     sample_id, kind, data = chunk
-
     if kind_to_fc_parameters and kind in kind_to_fc_parameters:
         fc_parameters = kind_to_fc_parameters[kind]
     else:
@@ -376,10 +374,26 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
 
     def _f():
         for function_name, parameter_list in fc_parameters.items():
+            func = getattr(feature_calculators, function_name)
 
-            func = _get_function(function_name)
+            # If the function uses the index, pass is at as a pandas Series.
+            # Otherwise, convert to numpy array
+            if getattr(func, 'input', False) == 'pd.Series':
+                # If it has a required index type, check that the data has the right index type.
+                index_type = getattr(func, 'index_type', None)
+                if index_type is not None:
+                    try:
+                        assert isinstance(data.index, index_type)
+                    except AssertionError:
+                        warnings.warn(
+                            f"{function_name} requires the data to have a {str} . Results will "
+                            f"not be calculated"
+                        )
+                        continue
+                x = data
+            else:
+                x = data.values
 
-            x = data
             if func.fctype == "combiner":
                 result = func(x, param=parameter_list)
             else:

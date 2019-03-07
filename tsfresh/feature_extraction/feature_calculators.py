@@ -17,6 +17,7 @@ seen by tsfresh as a feature calculator. Others will not be calculated.
 from __future__ import absolute_import, division
 
 import itertools
+import warnings
 from builtins import range
 
 import numpy as np
@@ -1924,40 +1925,43 @@ def first(x):
     return x[0]
 
 
-@set_property("fctype", "simple")
+@set_property("fctype", "combiner")
+@set_property("input", "pd.Series")
+@set_property("index_type", pd.DatetimeIndex)
 @set_property("high_comp_cost", True)
-def slope(x):
+def linear_trend_timewise(x, param):
     """
-    Calculate the slope of a linear least-squares regression for the values of the time series,
-    using the timestamp index.
+    Calculate a linear least-squares regression for the values of the time series versus the sequence from 0 to
+    length of the time series minus one.
+    This feature uses the index of the time series to fit the model, which must be of a datetime
+    dtype.
+    The parameters control which of the characteristics are returned.
 
     Possible extracted attributes are "pvalue", "rvalue", "intercept", "slope", "stderr", see the documentation of
     linregress for more information.
 
-    :param x: the time series to calculate the feature of
+    :param x: the time series to calculate the feature of. The index must be datetime.
     :type x: pandas.Series
+    :param param: contains dictionaries {"attr": x} with x an string, the attribute name of the regression model
+    :type param: list
     :return: the different feature values
-    :return type: float
+    :return type: list
     """
-    assert_index_is_datetime(x)
+    ix = x.index
 
-    if isinstance(x.index, pd.MultiIndex):
-        ix = x.index.get_level_values(3)
-    else:
-        ix = x.index
-
-    # Get differences in seconds
+    # Get differences between each timestamp and the first timestamp in seconds.
+    # Then convert to hours and reshape for linear regression
     times_seconds = (ix - ix[0]).total_seconds()
+    times_hours = np.asarray(times_seconds / float(3600))
 
-    # Convert to minutes and reshape for linear regression
-    times_minutes = np.asarray(times_seconds / 60)
+    linReg = linregress(times_hours, x.values)
 
-    linReg = linregress(times_minutes, x.values)
-
-    # Return per hour
-    return np.multiply(getattr(linReg, 'slope'), 60)
+    return [("attr_\"{}\"".format(config["attr"]), getattr(linReg, config["attr"]))
+            for config in param]
 
 
+@set_property("input", "pd.Series")
+@set_property("index_type", pd.DatetimeIndex)
 @set_property("fctype", "range")
 @set_property("high_comp_cost", True)
 def time_since_end(x):
@@ -1981,6 +1985,8 @@ def time_since_end(x):
     return (x.loc[0, 'end_of_window'] - latest_time).total_seconds() / 3600
 
 
+@set_property("input", "pd.Series")
+@set_property("index_type", pd.DatetimeIndex)
 @set_property("fctype", "range")
 @set_property("high_comp_cost", True)
 def time_under(x):
@@ -2001,6 +2007,8 @@ def time_under(x):
     return x['time_in_minutes'].sum()
 
 
+@set_property("input", "pd.Series")
+@set_property("index_type", pd.DatetimeIndex)
 @set_property("fctype", "range")
 @set_property("high_comp_cost", True)
 def total_dose(x):
@@ -2020,7 +2028,8 @@ def total_dose(x):
     """
     return x['time_in_minutes'].multiply(x['value_per_minute']).sum()
 
-
+@set_property("input", "pd.Series")
+@set_property("index_type", pd.DatetimeIndex)
 @set_property("fctype", "simple")
 def is_measured(x):
     """
