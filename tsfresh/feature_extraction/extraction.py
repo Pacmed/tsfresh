@@ -34,8 +34,7 @@ def extract_features(timeseries_container, default_fc_parameters=None,
                      profile=defaults.PROFILING,
                      profiling_filename=defaults.PROFILING_FILENAME,
                      profiling_sorting=defaults.PROFILING_SORTING,
-                     distributor=None,
-                     custom_features=None):
+                     distributor=None):
     """
     Extract features from
 
@@ -124,10 +123,6 @@ def extract_features(timeseries_container, default_fc_parameters=None,
              TSFresh to choose the best distributor.
     :type distributor: class
 
-    :param custom_features: Extra custom features to be used, in the format {feature_name:
-    function}. The functions should still be included in the settings.
-    :type custom_features: dict
-
     :return: The (maybe imputed) DataFrame containing extracted features.
     :rtype: pandas.DataFrame
     """
@@ -155,9 +150,6 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     if profile:
         profiler = profiling.start_profiling()
 
-    if custom_features is None:
-        custom_features = {}
-
     with warnings.catch_warnings():
         if not show_warnings:
             warnings.simplefilter("ignore")
@@ -171,8 +163,7 @@ def extract_features(timeseries_container, default_fc_parameters=None,
                                 disable_progressbar=disable_progressbar,
                                 default_fc_parameters=default_fc_parameters,
                                 kind_to_fc_parameters=kind_to_fc_parameters,
-                                distributor=distributor,
-                                custom_features=custom_features)
+                                distributor=distributor)
 
         # Impute the result if requested
         if impute_function is not None:
@@ -254,8 +245,7 @@ def _get_function(fun_name):
 
 def _do_extraction(df, column_id, column_value, column_kind,
                    default_fc_parameters, kind_to_fc_parameters,
-                   n_jobs, chunk_size, disable_progressbar, distributor,
-                   custom_features):
+                   n_jobs, chunk_size, disable_progressbar, distributor):
     """
     Wrapper around the _do_extraction_on_chunk, which calls it on all chunks in the data frame.
     A chunk is a subset of the data, with a given kind and id - so a single time series.
@@ -301,10 +291,6 @@ def _do_extraction(df, column_id, column_value, column_kind,
                          Leave to None, if you want TSFresh to choose the best distributor.
     :type distributor: DistributorBaseClass
 
-    :param custom_features: Extra custom features to be used, in the format {feature_name:
-    function}. The functions should still be included in the settings.
-    :type custom_features: dict
-
     :return: the extracted features
     :rtype: pd.DataFrame
     """
@@ -324,8 +310,7 @@ def _do_extraction(df, column_id, column_value, column_kind,
         raise ValueError("the passed distributor is not an DistributorBaseClass object")
 
     kwargs = dict(default_fc_parameters=default_fc_parameters,
-                  kind_to_fc_parameters=kind_to_fc_parameters,
-                  custom_features=custom_features)
+                  kind_to_fc_parameters=kind_to_fc_parameters)
 
     extract_function = _do_extraction_on_chunk
 
