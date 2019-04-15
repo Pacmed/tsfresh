@@ -319,8 +319,8 @@ def _do_extraction(df, column_id, column_value, column_kind,
 
     # Return a dataframe in the typical form (id as index and feature names as columns)
     result = pd.DataFrame(result)
-    if result.columns.contains("value"):
-        result["value"] = result["value"].astype(float)
+    # if result.columns.contains("value"):
+    #     result["value"] = result["value"].astype(float)
 
     if len(result) != 0:
         result = result.pivot("id", "variable", "value")
