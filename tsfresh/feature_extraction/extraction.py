@@ -146,7 +146,7 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     else:
         funcs_to_check = list(set([key for _, d in kind_to_fc_parameters.items() for key in d.keys()]))
     
-    if any(_get_function(fun_name).fctype == 'range' for fun_name in funcs_to_check):
+    if any(getattr(feature_calculators, fun_name).fctype == 'range' for fun_name in funcs_to_check):
         df_melt = preprocess_range_df(df_melt, column_value)
 
     # If requested, do profiling (advanced feature)
@@ -228,6 +228,8 @@ def generate_data_chunk_format(df, column_id, column_kind, column_value):
     """
     MAX_VALUES_GROUPBY = 2147483647
 
+    print(df[[column_id, column_kind]])
+
     if df[[column_id, column_kind]].nunique().prod() >= MAX_VALUES_GROUPBY:
         _logger.error(
             "The time series container has {} different ids and {} different kind of time series, in total {} possible combinations. "
@@ -240,10 +242,6 @@ def generate_data_chunk_format(df, column_id, column_kind, column_value):
             "Number of ids/kinds are too high. Please reduce your data size and run feature extraction again.")
     data_in_chunks = [x + (y,) for x, y in df.groupby([column_id, column_kind])[column_value]]
     return data_in_chunks
-
-
-def _get_function(fun_name):
-    return getattr(feature_calculators, fun_name)
 
 
 def _do_extraction(df, column_id, column_value, column_kind,
