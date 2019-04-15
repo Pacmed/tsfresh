@@ -2050,4 +2050,4 @@ def mode(x):
     :return type: tuple
     """
     c = Counter(x)
-    return (x for x, c in c.items() if c == c.most_common(1)[0][1])
+    return tuple(x for x, c in c.items() if c == c.most_common(1)[0][1])
