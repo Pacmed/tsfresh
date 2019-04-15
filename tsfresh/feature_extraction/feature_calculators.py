@@ -17,7 +17,6 @@ seen by tsfresh as a feature calculator. Others will not be calculated.
 from __future__ import absolute_import, division
 
 import itertools
-import warnings
 from builtins import range
 
 import numpy as np
@@ -28,10 +27,9 @@ from scipy.stats import linregress, stats
 from statsmodels.tools.sm_exceptions import MissingDataError
 from statsmodels.tsa.ar_model import AR
 from statsmodels.tsa.stattools import acf, adfuller, pacf
+from collections import Counter
 
 # todo: make sure '_' works in parameter names in all cases, add a warning if not
-from tsfresh.utilities.dataframe_functions import assert_index_is_datetime
-
 
 def _roll(a, shift):
     """
@@ -2049,6 +2047,7 @@ def mode(x):
     :param x: the time series to calculate the feature of
     :type x: np.ndarray
     :return: the different feature values
-    :return type: float
+    :return type: tuple
     """
-    return stats.mode(x)[0]  # The first item of the output is the mode
+    c = Counter(x)
+    return (x for x, c in c.items() if c == c.most_common(1)[0][1])

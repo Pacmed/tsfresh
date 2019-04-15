@@ -228,8 +228,6 @@ def generate_data_chunk_format(df, column_id, column_kind, column_value):
     """
     MAX_VALUES_GROUPBY = 2147483647
 
-    print(df[[column_id, column_kind]])
-
     if df[[column_id, column_kind]].nunique().prod() >= MAX_VALUES_GROUPBY:
         _logger.error(
             "The time series container has {} different ids and {} different kind of time series, in total {} possible combinations. "
