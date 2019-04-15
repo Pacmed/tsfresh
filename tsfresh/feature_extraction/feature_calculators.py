@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 from numpy.linalg import LinAlgError
 from scipy.signal import cwt, find_peaks_cwt, ricker, welch
-from scipy.stats import linregress
+from scipy.stats import linregress, stats
 from statsmodels.tools.sm_exceptions import MissingDataError
 from statsmodels.tsa.ar_model import AR
 from statsmodels.tsa.stattools import acf, adfuller, pacf
@@ -2028,16 +2028,27 @@ def total_dose(x):
     """
     return x['time_in_minutes'].multiply(x['value_per_minute']).sum()
 
-@set_property("input", "pd.Series")
-@set_property("index_type", pd.DatetimeIndex)
+
 @set_property("fctype", "simple")
 def is_measured(x):
     """
     Check if a variable has been measured – i.e. if the series is not empty.
 
     :param x: the time series to calculate the feature of
-    :type x: pd.DataFrame
+    :type x: np.ndarray
     :return: the different feature values
     :return type: float
     """
     return float(bool(len(x)))
+
+
+@set_property("fctype", "simple")
+def mode(x):
+    """Return the mode of the parameter (i.e. most common value)
+
+    :param x: the time series to calculate the feature of
+    :type x: np.ndarray
+    :return: the different feature values
+    :return type: float
+    """
+    return stats.mode(x)[0]  # The first item of the output is the mode

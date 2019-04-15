@@ -534,7 +534,7 @@ def assert_index_is_datetime(x):
     """Assert that the index of a pandas Series is a datetime dtype.
 
     :param x: the time series to calculate the aggregation of
-    :type x: pandas.Series
+    :type x: pd.DataFrame
     """
     ix = x.index
     dtype_date = pd.to_datetime(['2013']).dtype
@@ -547,11 +547,13 @@ def assert_index_is_datetime(x):
         assert x.index.dtype == dtype_date, error_mess
 
 
-def preprocess_range_df(x):
+def preprocess_range_df(x, column_value):
     """Preprocess a range value series with a datetime multiindex.
 
     :param x: the features to process.
     :type x: pd.DataFrame
+    :param column_value: the column holding the value
+    :type column_value: str
     :return: a processed pd.DataFrame
     :return type: pd.DataFrame
     """
@@ -560,15 +562,13 @@ def preprocess_range_df(x):
         "3 level of indices, in this order:" \
         "'end_of_current_window', 'start_time', 'end_time'."
 
-    x.columns = ['value']
-
     x['end_of_window'] = x.index.get_level_values(0)
     x['start_time'] = x.index.get_level_values(1)
     x['end_time'] = x.index.get_level_values(2)
 
     x = x.reset_index(drop=True)
 
-    x['value_per_minute'] = x['value'] / ((x['end_time'] - x['start_time']).dt.total_seconds() / 60)
+    x['value_per_minute'] = x[column_value] / ((x['end_time'] - x['start_time']).dt.total_seconds() / 60)
 
     # Cap end times at value of the latest end of window
     x.loc[x['end_time'] > x['end_of_window'], 'end_time'] = x['end_of_window'].max()
