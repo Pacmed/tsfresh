@@ -556,13 +556,15 @@ def preprocess_range_df(x):
     :return type: pd.DataFrame
     """
     assert_index_is_datetime(x)
+    assert x.index.nlevels == 3, "For range aggregations the dataframe must have" \
+        "3 level of indices, in this order:" \
+        "'end_of_current_window', 'start_time', 'end_time'."
 
     x.columns = ['value']
 
     x['end_of_window'] = x.index.get_level_values(0)
     x['start_time'] = x.index.get_level_values(1)
     x['end_time'] = x.index.get_level_values(2)
-    x['timestamp'] = x.index.get_level_values(3)
 
     x = x.reset_index(drop=True)
 

@@ -128,7 +128,6 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     """
     import logging
     logging.basicConfig()
-
     # Always use the standardized way of storing the data.
     # See the function normalize_input_to_internal_representation for more information.
     df_melt, column_id, column_kind, column_value = \
@@ -141,9 +140,13 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     # Use the standard setting if the user did not supply ones himself.
     if default_fc_parameters is None:
         default_fc_parameters = ComprehensiveFCParameters()
-
-    if any(_get_function(fun_name).fctype == 'range' for fun_name,
-                                                         _ in default_fc_parameters.items()):
+    
+    if kind_to_fc_parameters is None:
+        funcs_to_check = list(set(list(default_fc_parameters.keys())))
+    else:
+        funcs_to_check = list(set([key for _, d in kind_to_fc_parameters.items() for key in d.keys()]))
+    
+    if any(_get_function(fun_name).fctype == 'range' for fun_name in funcs_to_check):
         df_melt = preprocess_range_df(df_melt)
 
     # If requested, do profiling (advanced feature)
@@ -356,7 +359,7 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
         fc_parameters = kind_to_fc_parameters[kind]
     else:
         fc_parameters = default_fc_parameters
-
+    
     def _f():
         for function_name, parameter_list in fc_parameters.items():
             func = getattr(feature_calculators, function_name)
@@ -371,7 +374,7 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
                         assert isinstance(data.index, index_type)
                     except AssertionError:
                         warnings.warn(
-                            f"{function_name} requires the data to have a {str} . Results will "
+                            f"{function_name} requires the data to have a {index_type}. Results will "
                             f"not be calculated"
                         )
                         continue

@@ -1979,10 +1979,10 @@ def time_since_end(x):
     :return: the different feature values
     :return type: float
     """
-    x.loc[x['end_time'] > x['end_of_window'], 'end_time'] = x.loc[0, 'end_of_window']
+    x.loc[x['end_time'] > x['end_of_window'], 'end_time'] = x['end_of_window'].iloc[0]
     latest_time = x['end_time'].max()
 
-    return (x.loc[0, 'end_of_window'] - latest_time).total_seconds() / 3600
+    return (x['end_of_window'].iloc[0] - latest_time).total_seconds() / 3600
 
 
 @set_property("input", "pd.Series")
