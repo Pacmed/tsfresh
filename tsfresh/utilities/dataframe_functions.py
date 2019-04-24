@@ -565,7 +565,11 @@ def preprocess_range_df(x, column_value):
     x['start_time'] = x.index.get_level_values(1)
     x['end_time'] = x.index.get_level_values(2)
 
+    # Duplicate start time to be used as index
+    x['ix'] = x.index.get_level_values(1)
+
     x = x.reset_index(drop=True)
+    x = x.set_index('ix')
 
     x['value_per_minute'] = x[column_value] / ((x['end_time'] - x['start_time']).dt.total_seconds() / 60)
 
