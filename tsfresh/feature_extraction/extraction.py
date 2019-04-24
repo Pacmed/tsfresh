@@ -310,7 +310,7 @@ def _do_extraction(df, column_id, column_value, column_kind,
 
     kwargs = dict(default_fc_parameters=default_fc_parameters,
                   kind_to_fc_parameters=kind_to_fc_parameters)
-
+    print(kwargs)
     extract_function = _do_extraction_on_chunk
 
     result = distributor.map_reduce(extract_function, data=data_in_chunks, chunk_size=chunk_size,
@@ -325,7 +325,6 @@ def _do_extraction(df, column_id, column_value, column_kind,
     if len(result) != 0:
         result = result.pivot("id", "variable", "value")
         result.index = result.index.astype(df[column_id].dtype)
-    print(result.columns)
 
     return result
 
