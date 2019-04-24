@@ -321,10 +321,11 @@ def _do_extraction(df, column_id, column_value, column_kind,
     result = pd.DataFrame(result)
     # if result.columns.contains("value"):
     #     result["value"] = result["value"].astype(float)
-    print(result.columns)
+
     if len(result) != 0:
         result = result.pivot("id", "variable", "value")
         result.index = result.index.astype(df[column_id].dtype)
+    print(result.columns)
 
     return result
 
