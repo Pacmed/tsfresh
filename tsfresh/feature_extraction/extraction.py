@@ -148,7 +148,6 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     
     if any(getattr(feature_calculators, fun_name).fctype == 'range' for fun_name in funcs_to_check):
         df_melt = preprocess_range_df(df_melt, column_value)
-    print(df_melt)
 
     # If requested, do profiling (advanced feature)
     if profile:
