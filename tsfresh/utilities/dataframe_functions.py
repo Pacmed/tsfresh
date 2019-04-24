@@ -571,5 +571,7 @@ def preprocess_range_df(x, column_value):
     x.loc[x['end_time'] > x['end_of_window'], 'end_time'] = x['end_of_window'].max()
     x['time_in_minutes'] = ((x['end_time'] - x['start_time']).dt.total_seconds() / 60)
 
-    x.set_index(['end_of_window', 'start_time', 'end_time', 'value_per_minute', 'time_in_minutes'])
+    x = x.set_index([
+        'end_of_window', 'start_time', 'end_time', 'value_per_minute', 'time_in_minutes']
+    )
     return x
