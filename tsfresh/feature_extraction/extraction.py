@@ -366,12 +366,12 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
                 # If it has a required index type, check that the data has the right index type.
                 index_type = getattr(func, 'index_type', None)
                 if index_type is not None:
-                    print(data.index)
                     try:
                         if isinstance(data.index, pd.MultiIndex):
                             for x in range(len(data.index.levels)):
                                 assert isinstance(data.index.get_level_values(x), index_type)
                         else:
+                            print(data.index)
                             assert isinstance(data.index, index_type)
                     except AssertionError:
                         warnings.warn(
