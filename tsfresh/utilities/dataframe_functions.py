@@ -537,14 +537,13 @@ def assert_index_is_datetime(x):
     :type x: pd.DataFrame
     """
     ix = x.index
-    dtype_date = pd.to_datetime(['2013']).dtype
     error_mess = 'The index of the dataframe needs to be of type datetime'
 
     if isinstance(ix, pd.MultiIndex):
         for x in range(len(ix.levels)):
-            assert ix.get_level_values(x).dtype == dtype_date, error_mess
+            assert isinstance(ix.get_level_values(x), pd.DatetimeIndex), error_mess
     else:
-        assert x.index.dtype == dtype_date, error_mess
+        assert isinstance(x.index, pd.DatetimeIndex), error_mess
 
 
 def preprocess_range_df(x, column_value):
