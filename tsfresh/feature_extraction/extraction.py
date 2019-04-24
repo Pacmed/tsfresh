@@ -148,7 +148,6 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     
     if any(getattr(feature_calculators, fun_name).fctype == 'range' for fun_name in funcs_to_check):
         df_melt = preprocess_range_df(df_melt, column_value)
-    print(df_melt.columns)
 
     # If requested, do profiling (advanced feature)
     if profile:
@@ -294,7 +293,6 @@ def _do_extraction(df, column_id, column_value, column_kind,
     :return: the extracted features
     :rtype: pd.DataFrame
     """
-
     data_in_chunks = generate_data_chunk_format(df, column_id, column_kind, column_value)
 
     if distributor is None:
