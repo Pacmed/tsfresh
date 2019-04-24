@@ -148,6 +148,7 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     
     if any(getattr(feature_calculators, fun_name).fctype == 'range' for fun_name in funcs_to_check):
         df_melt = preprocess_range_df(df_melt, column_value)
+    print(df_melt)
 
     # If requested, do profiling (advanced feature)
     if profile:
@@ -371,7 +372,6 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
                             for x in range(len(data.index.levels)):
                                 assert isinstance(data.index.get_level_values(x), index_type)
                         else:
-                            print(data)
                             assert isinstance(data.index, index_type)
                     except AssertionError:
                         warnings.warn(
