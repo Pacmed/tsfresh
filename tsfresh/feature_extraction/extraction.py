@@ -371,7 +371,7 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
                             for x in range(len(data.index.levels)):
                                 assert isinstance(data.index.get_level_values(x), index_type)
                         else:
-                            print(data.index)
+                            print(data)
                             assert isinstance(data.index, index_type)
                     except AssertionError:
                         warnings.warn(
