@@ -310,7 +310,7 @@ def _do_extraction(df, column_id, column_value, column_kind,
 
     kwargs = dict(default_fc_parameters=default_fc_parameters,
                   kind_to_fc_parameters=kind_to_fc_parameters)
-    print(kwargs)
+
     extract_function = _do_extraction_on_chunk
 
     result = distributor.map_reduce(extract_function, data=data_in_chunks, chunk_size=chunk_size,
@@ -367,11 +367,15 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
                 index_type = getattr(func, 'index_type', None)
                 if index_type is not None:
                     try:
+                        if isinstance(data.index, pd.MultiIndex):
+                            for x in range(len(data.index.levels)):
+                                assert isinstance(data.index.get_level_values(x),
+                                                  index_type)
                         assert isinstance(data.index, index_type)
                     except AssertionError:
                         warnings.warn(
-                            f"{function_name} requires the data to have a {index_type}. Results will "
-                            f"not be calculated"
+                            f"{function_name} requires the data to have a {index_type}. "
+                            f"Results will not be calculated"
                         )
                         continue
                 x = data
