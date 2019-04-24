@@ -293,7 +293,6 @@ def _do_extraction(df, column_id, column_value, column_kind,
     :return: the extracted features
     :rtype: pd.DataFrame
     """
-
     data_in_chunks = generate_data_chunk_format(df, column_id, column_kind, column_value)
 
     if distributor is None:
@@ -367,11 +366,12 @@ def _do_extraction_on_chunk(chunk, default_fc_parameters, kind_to_fc_parameters)
                 index_type = getattr(func, 'index_type', None)
                 if index_type is not None:
                     try:
-                        assert isinstance(data.index, index_type)
+                        if not isinstance(data.index, pd.MultiIndex):
+                            assert isinstance(data.index, index_type)
                     except AssertionError:
                         warnings.warn(
-                            f"{function_name} requires the data to have a {index_type}. Results will "
-                            f"not be calculated"
+                            f"{function_name} requires the data to have a {index_type}. "
+                            f"Results will not be calculated"
                         )
                         continue
                 x = data

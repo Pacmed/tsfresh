@@ -1977,6 +1977,7 @@ def time_since_end(x):
     :return: the different feature values
     :return type: float
     """
+    x = x.reset_index(drop=False)
     x.loc[x['end_time'] > x['end_of_window'], 'end_time'] = x['end_of_window'].iloc[0]
     latest_time = x['end_time'].max()
 
@@ -2002,6 +2003,7 @@ def time_under(x):
     :return: the different feature values
     :return type: float
     """
+    x = x.reset_index(drop=False)
     return x['time_in_minutes'].sum()
 
 
@@ -2024,6 +2026,7 @@ def total_dose(x):
     :return: the different feature values
     :return type: float
     """
+    x = x.reset_index(drop=False)
     return x['time_in_minutes'].multiply(x['value_per_minute']).sum()
 
 
