@@ -148,14 +148,11 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     
     if any(getattr(feature_calculators, fun_name).fctype == 'range' for fun_name in funcs_to_check):
         df_melt = preprocess_range_df(df_melt, column_value)
-        print('RANGYRANGY')
 
     # If requested, do profiling (advanced feature)
     if profile:
         profiler = profiling.start_profiling()
 
-    print(kind_to_fc_parameters)
-    print(default_fc_parameters)
     with warnings.catch_warnings():
         if not show_warnings:
             warnings.simplefilter("ignore")
@@ -324,7 +321,7 @@ def _do_extraction(df, column_id, column_value, column_kind,
     result = pd.DataFrame(result)
     # if result.columns.contains("value"):
     #     result["value"] = result["value"].astype(float)
-
+    print(result.columns)
     if len(result) != 0:
         result = result.pivot("id", "variable", "value")
         result.index = result.index.astype(df[column_id].dtype)
