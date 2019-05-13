@@ -2054,3 +2054,17 @@ def mode(x):
     """
     c = Counter(x)
     return tuple(x for x, count in c.items() if count == c.most_common(1)[0][1])
+
+
+@set_property("fctype", "simple")
+@set_property("minimal", True)
+def count(x):
+    """
+    Returns the number of elements in x
+
+    :param x: the time series to calculate the feature of
+    :type x: np.ndarray
+    :return: the value of this feature
+    :return type: int
+    """
+    return len(x)
