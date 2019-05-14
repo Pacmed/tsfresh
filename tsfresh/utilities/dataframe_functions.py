@@ -336,8 +336,8 @@ def _normalize_input_to_internal_representation(timeseries_container, column_id,
     if column_value not in timeseries_container.columns:
         raise ValueError("The given column for the value is not present in the data.")
 
-    if timeseries_container[column_value].isnull().any():
-        raise ValueError("You have NaN values in your value column.")
+    # if timeseries_container[column_value].isnull().any():
+    #     raise ValueError("You have NaN values in your value column.")
 
     if column_sort:
         timeseries_container = timeseries_container.sort_values([column_id, column_kind, column_sort])

@@ -1990,13 +1990,11 @@ def time_since_end(x):
 @set_property("high_comp_cost", True)
 def time_under(x):
     """
-    Calculate the time, in hours, since the latest time recorded for
+    Calculate the time, in hours, since the latest time recorded for the measurement.
 
     x needs to have a datetime multi-index. The first one is the end of the current window,
     the second is the start time of the range feature, and the third one the end time of the
     range feature.
-
-    The value of x must be the total value for the range (not per minute or per hour)
 
     :param x: the time series to calculate the feature of
     :type x: pd.DataFrame
@@ -2004,7 +2002,7 @@ def time_under(x):
     :return type: float
     """
     x = x.reset_index(drop=False)
-    return x['time_in_minutes'].sum()
+    return x['time_in_minutes'].sum()/60
 
 
 @set_property("input", "pd.Series")
@@ -2054,3 +2052,17 @@ def mode(x):
     """
     c = Counter(x)
     return tuple(x for x, count in c.items() if count == c.most_common(1)[0][1])
+
+
+@set_property("fctype", "simple")
+@set_property("minimal", True)
+def count(x):
+    """
+    Returns the number of elements in x
+
+    :param x: the time series to calculate the feature of
+    :type x: np.ndarray
+    :return: the value of this feature
+    :return type: int
+    """
+    return len(x)
