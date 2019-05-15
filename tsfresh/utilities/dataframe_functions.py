@@ -561,6 +561,8 @@ def preprocess_range_df(x, column_value):
         "3 level of indices, in this order:" \
         "'end_of_current_window', 'start_time', 'end_time'."
 
+    x = x.sort_index()
+
     x['end_of_window'] = x.index.get_level_values(0)
     x['start_time'] = x.index.get_level_values(1)
     x['end_time'] = x.index.get_level_values(2)
