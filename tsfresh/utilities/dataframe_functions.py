@@ -544,36 +544,3 @@ def assert_index_is_datetime(x):
             assert isinstance(ix.get_level_values(x), pd.DatetimeIndex), error_mess
     else:
         assert isinstance(x.index, pd.DatetimeIndex), error_mess
-
-
-def preprocess_range_df(x, column_value):
-    """Preprocess a range value series with a datetime multiindex.
-
-    :param x: the features to process.
-    :type x: pd.DataFrame
-    :param column_value: the column holding the value
-    :type column_value: str
-    :return: a processed pd.DataFrame
-    :return type: pd.DataFrame
-    """
-    assert_index_is_datetime(x)
-    assert x.index.nlevels == 3, "For range aggregations the dataframe must have" \
-        "3 level of indices, in this order:" \
-        "'end_of_current_window', 'start_time', 'end_time'."
-
-    x = x.sort_index()
-
-    x['end_of_window'] = x.index.get_level_values(0)
-    x['start_time'] = x.index.get_level_values(1)
-    x['end_time'] = x.index.get_level_values(2)
-
-    x['value_per_minute'] = x[column_value] / ((x['end_time'] - x['start_time']).dt.total_seconds() / 60)
-
-    # Cap end times at value of the latest end of window
-    x.loc[x['end_time'] > x['end_of_window'], 'end_time'] = x['end_of_window'].max()
-    x['time_in_minutes'] = ((x['end_time'] - x['start_time']).dt.total_seconds() / 60)
-
-    x = x.set_index([
-        'end_of_window', 'start_time', 'end_time', 'value_per_minute', 'time_in_minutes']
-    )
-    return x
