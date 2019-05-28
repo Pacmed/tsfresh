@@ -16,7 +16,6 @@ from tsfresh import defaults
 from tsfresh.feature_extraction import feature_calculators
 from tsfresh.feature_extraction.settings import ComprehensiveFCParameters
 from tsfresh.utilities import dataframe_functions, profiling
-from tsfresh.utilities.dataframe_functions import preprocess_range_df
 from tsfresh.utilities.distribution import MapDistributor, MultiprocessingDistributor, \
     DistributorBaseClass
 from tsfresh.utilities.string_manipulation import convert_to_output_format
@@ -140,14 +139,6 @@ def extract_features(timeseries_container, default_fc_parameters=None,
     # Use the standard setting if the user did not supply ones himself.
     if default_fc_parameters is None:
         default_fc_parameters = ComprehensiveFCParameters()
-    
-    if kind_to_fc_parameters is None:
-        funcs_to_check = list(set(list(default_fc_parameters.keys())))
-    else:
-        funcs_to_check = list(set([key for _, d in kind_to_fc_parameters.items() for key in d.keys()]))
-    
-    if any(getattr(feature_calculators, fun_name).fctype == 'range' for fun_name in funcs_to_check):
-        df_melt = preprocess_range_df(df_melt, column_value)
 
     # If requested, do profiling (advanced feature)
     if profile:
